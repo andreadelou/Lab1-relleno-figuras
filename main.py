@@ -3,216 +3,155 @@ from obj import Obj
 from Vector import *
 
 def char(c):
+    # 1 byte
   return struct.pack('=c', c.encode('ascii'))
 
+
 def word(w):
-  return struct.pack('=h', w)
+    # 2 bytes
+    return struct.pack('=h', w)
 
 def dword(d):
-  return struct.pack('=l', d)
+    # 4 bytes
+    return struct.pack('=l',d)
 
-def color(r, g, b):
-    return bytes([b, g, r])
-  
-def color_unit(r, g, b):
-  return color(clamping(r*255), clamping(g*255), clamping(b*255))
-  
-def clamping(num):
-  return int(max(min(num, 255), 0))
-    
+
+def color(r,g,b):
+    # Creacion de Color (255 deja usar todos los colores)
+    return bytes([int(b*255),
+                int(g*255),
+                int(r*255)])
+
+
+
 class Render(object):
-  def __init__(self, width, height):
-    self.pintar = color(255,255,255)
-    self.framebuffer = []
+    # Constructor
+    def __init__(self):
+        self.viewPortX = 0
+        self.viewPortY = 0
+        self.height = 0
+        self.width = 0
+        self.clearColor = color(0, 0, 0)
+
+        self.current_color = color(1, 1, 1)
+        self.framebuffer = []
+       
+        self.glViewport(0,0,self.width, self.height)
+        self.glClear() 
+
+    def glCreateWindow(self, width, height):
+        self.width = width
+        self.height = height
+        self.glClear()
+
+    def glViewport(self, x, y, width, height):
+        self.viewpx = x
+        self.viewpy = y
+        self.viewpwidth = width
+        self.viewpheight = height
+    
+    def glClear(self):
+        self.framebuffer = [[self.clearColor for x in range(self.width+1)]
+                            for y in range(self.height+1)]
+
+    def glClearColor(self, r, g, b):
+        self.clearColor = color(r, b, g)
+        self.glClear()
+
+    def glColor(self, r, g, b):
+        self.current_color = color(r, g, b)
+
+    def glPoint(self, x, y, color):
+      self.framebuffer[int(round((x+1) * self.width / 2))][int(round((y+1) * self.height / 2))] = color
+
+    def glFill(self, polygon):
+      for y in range(self.height):
+          for x in range(self.width):
+              i = 0
+              j = len(polygon) - 1
+              draw_point = False
+              for i in range(len(polygon)):
+                  if (polygon[i][1] < y and polygon[j][1] >= y) or (polygon[j][1] < y and polygon[i][1] >= y):
+                      if polygon[i][0] + (y - polygon[i][1]) / (polygon[j][1] - polygon[i][1]) * (polygon[j][0] - polygon[i][0]) < x:
+                          draw_point = not draw_point
+                  j = i
+              if draw_point:
+                  self.glPoint((float(x)/(float(self.width)/2))-1,(float(y)/(float(self.height)/2))-1,self.current_color)
+                    
+    # Función para crear la imagen
+    def glFinish(self, filename):
+        with open(filename, 'bw') as file:
+            # Header
+            file.write(bytes('B'.encode('ascii')))
+            file.write(bytes('M'.encode('ascii')))
+
+            # file size
+            file.write(dword(14 + 40 + self.height * self.width * 3))
+            file.write(dword(0))
+            file.write(dword(14 + 40))
+
+            # Info Header
+            file.write(dword(40))
+            file.write(dword(self.width))
+            file.write(dword(self.height))
+            file.write(word(1))
+            file.write(word(24))
+            file.write(dword(0))
+            file.write(dword(self.width * self.height * 3))
+            file.write(dword(0))
+            file.write(dword(0))
+            file.write(dword(0))
+            file.write(dword(0))
+
+            # Color table
+            for y in range(self.height):
+                for x in range(self.width):
+                    file.write(self.framebuffer[x][y])
+            file.close()
+      
+
   
-    self.width = width
-    self.height = height
-    self.XViewPort= 0
-    self.YViewPort= 0
-    self.widthVP = 0
-    self.heightVP = 0
-    
-    self.clearColor = color(0, 0, 0)
-    self.current_color = color(1,0,0)
-    
-    
+w = 1000
+h = 1000
+rend = Render()
+rend.glCreateWindow(w, h)
 
-    self.glViewPort(0,0,self.width, self.height)
-    self.glClear()
+rend.glViewport(int(0),
+                int(0), 
+                int(w/1), 
+                int(h/1))
 
-  def glClear(self):
-    self.framebuffer = [
-      [color(0,0,0) for x in range(self.width)] 
-      for y in range(self.height)
-    ]
+rend.glClear()
 
-  def glCreateWindow(self,width, height):
-      self.width = width
-      self.height = height
-    
-  def glViewPort(self, x, y, width, height):
-      self.XViewPort= x
-      self.YViewPort= y
-      self.widthVP= width
-      self.heightVP= height
-      
-  def glClearColor(self, r, g, b):
-      self.clearColor = color(r, b, g)
-      self.glClear()
-      
-  def glColor(self, r, g, b):
-      self.current_color = color(r, g, b)
-            
-  def glVertex(self, x, y):
-      puntoX = round( (x+1) * (self.widthVP/ 2 )  + self.XViewPort)
-      puntoY = round( (y+1) * (self.heightVP / 2) + self.YViewPort)
-      
-      self.framebuffer[puntoY][puntoX] = color(1,1,1)
-    
- 
-              
-  def glFinish(self, filename):
-    f = open(filename, 'bw')
+#poligono1: estrella
+#color
+rend.glColor(1, 0.93, 0.25)
+polygon1 = ((165, 380), (185, 360), (180, 330), (207, 345), (233, 330), (230, 360), (250, 380), (220, 385), (205, 410), (193, 383))
+rend.glFill(polygon1)
 
-    # File header (14 bytes)
-    f.write(char('B'))
-    f.write(char('M'))
-    f.write(dword(14 + 40 + self.width * self.height * 3))
-    f.write(dword(0))
-    f.write(dword(14 + 40))
+#poligono3: cuadrado
+#color
+rend.glColor(0.5, 0.2, 0.87)
+polygon2 = ((321, 335), (288, 286), (339, 251), (374, 302))
+rend.glFill(polygon2)
 
-    # Image header (40 bytes)
-    f.write(dword(40))
-    f.write(dword(self.width))
-    f.write(dword(self.height))
-    f.write(word(1))
-    f.write(word(24))
-    f.write(dword(0))
-    f.write(dword(self.width * self.height * 3))
-    f.write(dword(0))
-    f.write(dword(0))
-    f.write(dword(0))
-    f.write(dword(0))
+#poligono3: triangulo
+#color
+rend.glColor(0.3, 0.1, 0.26)
+polygon3 = ((377, 249), (411, 197), (436, 249))
+rend.glFill(polygon3)
 
-    # Pixel data (width x height x 3 pixels)
-    for x in range(self.height):
-      for y in range(self.width):
-        f.write(self.framebuffer[x][y])
 
-    f.close()
+#poligono4: tetera
+#color
+rend.glColor(0.2,0.7,1)
+polygon4 = ((413, 177), (448, 159), (502, 88), (553, 53), (535, 36), (676, 37), (660, 52), (750, 145), (761, 179), (672, 192), (659, 214), (615, 214), (632, 230), (580, 230), (597, 215), (552, 214), (517, 144), (466, 180))
+rend.glFill(polygon4)
 
-  def point(self, x, y, color = None):
-    # 0,0 was intentionally left in the bottom left corner to mimic opengl
-    self.pixels[y][x] = color or self.current_color
-    
-  def set_color(self, color):
-    self.current_color = color
-    
-  def glLine(self,v1,v2):
-        x1 = round(v1.x)
-        y1 = round(v1.y)
-        x2 = round(v2.x)
-        y2 = round(v2.y)
-        
-        dy = abs(y1-y2)
-        dx = abs(x1-x2)
-        steep = dy > dx
-        
-        # x1 = int(round((x1+1) * self.width / 2))
-        # y1 = int(round((y1+1) * self.height / 2))
-        # x2 = int(round((x2+1) * self.width / 2))
-        # y2 = int(round((y2+1) * self.height / 2))
-        # steep=(abs(y2 - y1))>(abs(x2 - x1))
-        
-        if steep:
-            x1, y1 = y1, x1
-            x2, y2 = y2, x2
-        if x1>x2:
-            x1,x2 = x2,x1
-            y1,y2 = y2,y1
+#poligono4: hoyo tetera
+#color
+rend.glColor(0, 0, 0)
+polygon5 = ((682, 175), (708, 120), (735, 148), (739, 170))
+rend.glFill(polygon5)
 
-        dy = abs(y2 - y1)
-        dx = abs(x2 - x1)
-        y = y1
-        offset = 0
-        threshold = dx
-
-        for x in range(x1, x2):
-            if offset>=threshold:
-                y += 1 if y1 < y2 else -1
-                threshold += 2*dx
-            if steep:
-                self.framebuffer[x][y] = self.pintar
-            else:
-                self.framebuffer[y][x] = self.pintar
-            offset += 2*dy
-  
-  def glObjModel(self, file_name, translate=(0,0), scale=(1,1)):
-        #Lector .obj
-        model = Obj(file_name)
-        model.read()
-        
-        for face in model.faces:
-            vertices_ctr = len(face)
-            for j in range(vertices_ctr):
-                f1 = face[j][0]
-                f2 = face[(j+1) % vertices_ctr][0]
-                
-                v1 = model.vertices[f1 - 1]
-                v2 = model.vertices[f2 - 1]
-
-                x1 = (v1[0] + translate[0]) * scale[0]
-                y1 = (v1[1] + translate[1]) * scale[1]
-                x2 = (v2[0] + translate[0]) * scale[0]
-                y2 = (v2[1] + translate[1]) * scale[1]
-
-                self.glLine(x1, y1, x2, y2)
-  
-  def triangle (A,B,C, col):
-    r.current_color = col
-    r.glLine(A,B)
-    r.glLine(B,C)
-    r.glLine(C,A)
-    
-    if A.y > B.y:
-      A,B = B,A
-    if A.y > C.y:
-      A,C = C,A
-    if B.y > C.y:
-      B,C = C,B
-    
-    r.current_color = color(0,0,255)
-    
-    dx_ac = C.x - A.x 
-    dy_ac = C.y - A.y
-    
-    mi_ac = dx_ac / dy_ac
-    
-    dx_ab = B.x - A.x 
-    dy_ab = B.y - A.y
-    
-    mi_ab = dx_ab / dy_ab
-    
-    for y in range(A.y,B.y + 1):
-      xi = round(A.x - mi_ac * (A.y - y))
-      xf = round(A.x - mi_ab * (A.y - y))
-      
-      for x in range(xi,xf+1):
-        r.point(x,y)
-      
-    
-r = Render(300,300)
-r.glCreateWindow(300, 300)
-# r.glViewPort(500,500 , 500, 500)
-r.glLine(V3(10,70),V3(50,160))
-r.glLine(V3(50,160), V3(70,80))
-r.glLine(V3(70,80),V3(10,70))
-r.glLine( V3(180,50), V3(150,1) ) 
-r.glLine( V3(150,1), V3(70,180) )
-r.glLine( V3(70,180), V3(180,50) )
-r.glLine( V3(180,150), V3(120,160) )
-r.glLine( V3(120,160), V3(130,180) )
-r.glLine( V3(130,180), V3(180,150) )
-# r.glObjModel('silla.obj', (0, 0), (0.3, 0.3))
-
-r.glFinish("a.bmp")
+rend.glFinish("a.bmp")
