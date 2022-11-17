@@ -111,45 +111,35 @@ class Render(object):
       
 
   
-w = 1000
-h = 1000
 rend = Render()
-rend.glCreateWindow(w, h)
+rend.glCreateWindow(1000, 1000)
 
-rend.glViewport(int(0),
-                int(0), 
-                int(w/1), 
-                int(h/1))
+rend.glViewport(int(0),int(0),int(1000/1), int(000/1))
 
 rend.glClear()
 
 #poligono1: estrella
-#color
-rend.glColor(1, 0.93, 0.25)
+rend.glColor(1, 0.75, 0.10)
 polygon1 = ((165, 380), (185, 360), (180, 330), (207, 345), (233, 330), (230, 360), (250, 380), (220, 385), (205, 410), (193, 383))
 rend.glFill(polygon1)
 
-#poligono3: cuadrado
-#color
-rend.glColor(0.5, 0.2, 0.87)
+#poligono2: cuadrado
+rend.glColor(0.3, 0.90, 0.37)
 polygon2 = ((321, 335), (288, 286), (339, 251), (374, 302))
 rend.glFill(polygon2)
 
 #poligono3: triangulo
-#color
-rend.glColor(0.3, 0.1, 0.26)
+rend.glColor(0.8, 0.45, 0.72)
 polygon3 = ((377, 249), (411, 197), (436, 249))
 rend.glFill(polygon3)
 
 
 #poligono4: tetera
-#color
-rend.glColor(0.2,0.7,1)
+rend.glColor(0.1,0.18,0.94)
 polygon4 = ((413, 177), (448, 159), (502, 88), (553, 53), (535, 36), (676, 37), (660, 52), (750, 145), (761, 179), (672, 192), (659, 214), (615, 214), (632, 230), (580, 230), (597, 215), (552, 214), (517, 144), (466, 180))
 rend.glFill(polygon4)
 
 #poligono4: hoyo tetera
-#color
 rend.glColor(0, 0, 0)
 polygon5 = ((682, 175), (708, 120), (735, 148), (739, 170))
 rend.glFill(polygon5)
